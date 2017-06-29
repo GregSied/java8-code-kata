@@ -75,7 +75,7 @@ public class Exercise2Test extends ClassicOnlineStore {
          * Create a stream with distinct age values using {@link Stream#distinct}
          */
         Stream<Integer> distinctAgeStream = customerList.stream()
-                .map(c -> c.getAge())
+                .map(customer -> customer.getAge())
                 .distinct();
 
         List<Integer> distinctAgeList = distinctAgeStream.collect(Collectors.toList());

@@ -5,15 +5,9 @@ import common.test.tool.annotation.Easy;
 import common.test.tool.dataset.ClassicOnlineStore;
 import common.test.tool.entity.Customer;
 import common.test.tool.util.CollectorImpl;
-
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -22,9 +16,27 @@ import java.util.stream.Collector;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 public class Exercise9Test extends ClassicOnlineStore {
+
+    @Test
+    public void shouldTest(){
+        // given
+        Supplier<List<String>> supplier = () -> new ArrayList<>();
+        BiConsumer<List<String>, String> accumulator = (list, s) -> list.add(s);
+        BinaryOperator<List<String>> combiner = (list1, list2) -> {
+            List<String> result = new ArrayList<>();
+            result.addAll(list1);
+            result.addAll(list2);
+            return result;
+        };
+        Function<List<String>, List<String>> finisher = list -> list;
+        // when
+
+        // then
+
+    }
 
     @Easy @Test
     public void simplestStringJoin() {
@@ -34,12 +46,17 @@ public class Exercise9Test extends ClassicOnlineStore {
          * Implement a {@link Collector} which can create a String with comma separated names shown in the assertion.
          * The collector will be used by serial stream.
          */
-        Supplier<Object> supplier = null;
-        BiConsumer<Object, String> accumulator = null;
-        BinaryOperator<Object> combiner = null;
-        Function<Object, String> finisher = null;
 
-        Collector<String, ?, String> toCsv =
+
+        Supplier<StringBuilder> supplier = () -> new StringBuilder();
+        BiConsumer<StringBuilder, String> accumulator = (sb, s) -> sb.append(s).append(',');
+        BinaryOperator<StringBuilder> combiner = (sb1, sb2) -> sb1.append(sb2);
+        Function<StringBuilder, String> finisher = sb -> {
+            sb.setLength(sb.length()-1);
+            return sb.toString();
+        };
+
+        Collector<String, StringBuilder, String> toCsv =
             new CollectorImpl<>(supplier, accumulator, combiner, finisher, Collections.emptySet());
         String nameAsCsv = customerList.stream().map(Customer::getName).collect(toCsv);
         assertThat(nameAsCsv, is("Joe,Steven,Patrick,Diana,Chris,Kathy,Alice,Andrew,Martin,Amy"));

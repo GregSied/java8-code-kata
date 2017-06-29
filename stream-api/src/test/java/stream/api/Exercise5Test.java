@@ -3,21 +3,14 @@ package stream.api;
 import common.test.tool.annotation.Easy;
 import common.test.tool.dataset.ClassicOnlineStore;
 import common.test.tool.entity.Customer;
-
 import org.junit.Test;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertThat;
 
 public class Exercise5Test extends ClassicOnlineStore {
 
@@ -28,7 +21,8 @@ public class Exercise5Test extends ClassicOnlineStore {
         /**
          * Create a list of customer names by using {@link Stream#collect} and {@link Collectors#toList}
          */
-        List<String> nameList = null;
+        List<String> nameList = customerList.stream()
+                .map(c -> c.getName()).collect(Collectors.toList());
 
         assertThat(nameList, contains("Joe", "Steven", "Patrick", "Diana", "Chris", "Kathy", "Alice", "Andrew",
                                       "Martin", "Amy"));
@@ -67,7 +61,8 @@ public class Exercise5Test extends ClassicOnlineStore {
          * Get the oldest customer by using {@link Collectors#maxBy}.
          * Don't use any intermediate operations.
          */
-        Optional<Customer> oldestCustomer = null;
+        Optional<Customer> oldestCustomer = customerList.stream()
+                .collect(Collectors.maxBy(Comparator.comparingInt(Customer::getAge)));
 
         assertThat(oldestCustomer.get(), is(customerList.get(3)));
     }
@@ -80,8 +75,23 @@ public class Exercise5Test extends ClassicOnlineStore {
          * Create a map of age as key and number of customers as value
          * using {@link Collectors#groupingBy} and {@link Collectors#counting}
          */
-        Map<Integer, Long> ageDistribution = null;
 
+
+        Map<Integer, List<Customer>> ageToClientMap = customerList.stream()
+                .collect(Collectors.groupingBy(c -> c.getAge()));
+
+        Map<Integer, Long> ageDistribution = ageToClientMap
+                .entrySet().stream()
+                .collect(Collectors.toMap(e -> e.getKey(), e -> (long) e.getValue().size()));
+
+
+        // lista klientów, którzy mają 22 lata
+        List<Customer> customers = ageToClientMap.get(22);
+
+//        Map<Integer, Long> ageDistribution = customerList.stream()
+//                .collect(Collectors.groupingBy((Customer c) -> c.getAge(),
+//                        Collectors.counting()));
+        
         assertThat(ageDistribution.size(), is(9));
         ageDistribution.forEach((k, v) -> {
             if (k.equals(22)) {
