@@ -142,6 +142,46 @@ public class Exercise9Test extends ClassicOnlineStore {
         assertThat(itemMap.get("desk"), containsInAnyOrder("Alice"));
     }
 
+
+    @Difficult
+    @Test
+    public void mapKeyedByItems2() {
+        List<Customer> customerList = this.mall.getCustomerList();
+
+        /**
+         * Implement a {@link Collector} which can create a {@link Map} with keys as item and
+         * values as {@link Set} of customers who are wanting to buy that item.
+         * The collector will be used by parallel stream.
+         */
+        Supplier<MultiMap<String, String>> supplier = () -> new MultiMap<>();
+
+        BiConsumer<MultiMap<String, String>, Customer> accumulator =
+                (map, customer) -> customer.getWantToBuy().stream()
+                        .map(item -> item.getName())
+                        .forEach(name -> map.put(name, customer.getName()));
+
+        BinaryOperator<MultiMap<String, String>> combiner =
+                (map1, map2) -> map1.merge(map2);
+
+        Function<MultiMap<String, String>, Map<String, Set<String>>> finisher
+                = map -> map.toMap();
+
+        Collector<Customer, MultiMap<String, String>, Map<String, Set<String>>> toItemAsKey =
+                new CollectorImpl<>(supplier, accumulator, combiner, finisher, EnumSet.of(
+                        Collector.Characteristics.CONCURRENT,
+                        Collector.Characteristics.IDENTITY_FINISH));
+        Map<String, Set<String>> itemMap = customerList.stream().parallel().collect(toItemAsKey);
+        assertThat(itemMap.get("plane"), containsInAnyOrder("Chris"));
+        assertThat(itemMap.get("onion"), containsInAnyOrder("Patrick", "Amy"));
+        assertThat(itemMap.get("ice cream"), containsInAnyOrder("Patrick", "Steven"));
+        assertThat(itemMap.get("earphone"), containsInAnyOrder("Steven"));
+        assertThat(itemMap.get("plate"), containsInAnyOrder("Joe", "Martin"));
+        assertThat(itemMap.get("fork"), containsInAnyOrder("Joe", "Martin"));
+        assertThat(itemMap.get("cable"), containsInAnyOrder("Diana", "Steven"));
+        assertThat(itemMap.get("desk"), containsInAnyOrder("Alice"));
+    }
+
+
     @Difficult
     @Test
     public void bitList2BitString() {
@@ -161,5 +201,36 @@ public class Exercise9Test extends ClassicOnlineStore {
         assertThat(bitString, is("01011000101001111000011100000000100001110111010101")
 
         );
+    }
+}
+
+class MultiMap<K, V> {
+    private Map<K, Set<V>> map = new HashMap<>();
+
+    void put(K key, V value){
+        map.putIfAbsent(key, new HashSet<>());
+        map.get(key).add(value);
+    }
+//
+//    void put(K key, Set<V> values){
+//        values.forEach(v -> put(key, v));
+//    }
+
+    void put(K key, Set<V> values){
+        map.putIfAbsent(key, new HashSet<>());
+        map.get(key).addAll(values);
+    }
+
+    Set<V> get(K key){
+        return map.getOrDefault(key, Collections.emptySet());
+    }
+
+    MultiMap<K, V> merge(MultiMap<K,V> other){
+        other.map.entrySet().forEach(e -> put(e.getKey(), e.getValue()));
+        return this;
+    }
+
+    public Map<K, Set<V>> toMap() {
+        return map;
     }
 }
