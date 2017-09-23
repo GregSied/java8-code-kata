@@ -105,10 +105,27 @@ public class Exercise9Test extends ClassicOnlineStore {
          * values as {@link Set} of customers who are wanting to buy that item.
          * The collector will be used by parallel stream.
          */
-        Supplier<Object> supplier = null;
-        BiConsumer<Object, Customer> accumulator = null;
-        BinaryOperator<Object> combiner = null;
-        Function<Object, Map<String, Set<String>>> finisher = null;
+        Supplier<Map<String, Set<String>>> supplier = () -> new HashMap<>();
+        BiConsumer<Map<String, Set<String>>, Customer> accumulator =
+                (map, customer) -> customer.getWantToBuy().stream()
+                .map(item -> item.getName())
+                .forEach(name -> {
+                    map.putIfAbsent(name, new HashSet<>());
+                    map.get(name).add(customer.getName());
+                });
+        BinaryOperator<Map<String, Set<String>>> combiner = (map1, map2) -> {
+            map2.entrySet().stream()
+                    .forEach(e -> map1.merge(e.getKey(), e.getValue(),
+                            (set1, set2) -> {
+                                Set<String> result = new HashSet<>();
+                                result.addAll(set1);
+                                result.addAll(set2);
+                                return result;
+                            }));
+            return map1;
+        };
+        Function<Map<String, Set<String>>, Map<String, Set<String>>> finisher
+                = x -> x;
 
         Collector<Customer, ?, Map<String, Set<String>>> toItemAsKey =
                 new CollectorImpl<>(supplier, accumulator, combiner, finisher, EnumSet.of(
