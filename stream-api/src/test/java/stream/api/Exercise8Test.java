@@ -8,9 +8,11 @@ import common.test.tool.entity.Shop;
 
 import org.junit.Test;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.hamcrest.Matchers.hasItems;
@@ -27,8 +29,21 @@ public class Exercise8Test extends ClassicOnlineStore {
         /**
          * Create a set of item names that are in {@link Customer.wantToBuy} but not on sale in any shop.
          */
-        List<String> itemListOnSale = null;
-        Set<String> itemSetNotOnSale = null;
+        // co jest do kupienia
+        List<String> itemListOnSale = shopStream
+                .flatMap(shop -> shop.getItemList().stream())
+                .map(item -> item.getName())
+                .collect(Collectors.toList());
+
+        // co ludzie chcą kupić
+        Set<String> itemWantedByCustomers = customerStream
+                .flatMap(customer -> customer.getWantToBuy().stream())
+                .map(item -> item.getName())
+                .collect(Collectors.toSet());
+        // różnica tych dwóch zbiorów
+        Set<String> itemSetNotOnSale = new HashSet<>(itemWantedByCustomers);
+
+        itemSetNotOnSale.removeAll(itemListOnSale);
 
         assertThat(itemSetNotOnSale, hasSize(3));
         assertThat(itemSetNotOnSale, hasItems("bag", "pants", "coat"));
