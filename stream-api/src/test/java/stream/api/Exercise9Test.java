@@ -5,15 +5,9 @@ import common.test.tool.annotation.Easy;
 import common.test.tool.dataset.ClassicOnlineStore;
 import common.test.tool.entity.Customer;
 import common.test.tool.util.CollectorImpl;
-
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -22,30 +16,87 @@ import java.util.stream.Collector;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 public class Exercise9Test extends ClassicOnlineStore {
 
-    @Easy @Test
+    @Easy
+    @Test
     public void simplestStringJoin() {
+        List<Customer> customerList = this.mall.getCustomerList();
+        /**
+         * Implement a {@link Collector} which can create a String with comma separated names shown in the assertion.
+         * The collector will be used by serial stream.
+         */
+        Supplier<StringBuilder> supplier = () -> new StringBuilder();
+        BiConsumer<StringBuilder, String> accumulator = (sb, s) -> sb.append(s)
+                .append(',');
+        BinaryOperator<StringBuilder> combiner = (sb1, sb2) -> {
+            StringBuilder sb = new StringBuilder();
+            sb.append(sb1).append(sb2);
+            return sb;
+        };
+        Function<StringBuilder, String> finisher = sb -> sb.toString()
+                .substring(0, sb.length() - 1);
+
+        Collector<String, StringBuilder, String> toCsv =
+                new CollectorImpl<>(supplier, accumulator, combiner, finisher, Collections.emptySet());
+        String nameAsCsv = customerList.stream().map(Customer::getName).collect(toCsv);
+        assertThat(nameAsCsv, is("Joe,Steven,Patrick,Diana,Chris,Kathy,Alice,Andrew,Martin,Amy"));
+    }
+
+    @Easy
+    @Test
+    public void simplestStringJoin2() {
         List<Customer> customerList = this.mall.getCustomerList();
 
         /**
          * Implement a {@link Collector} which can create a String with comma separated names shown in the assertion.
          * The collector will be used by serial stream.
          */
-        Supplier<Object> supplier = null;
-        BiConsumer<Object, String> accumulator = null;
-        BinaryOperator<Object> combiner = null;
-        Function<Object, String> finisher = null;
+        Supplier<List<String>> supplier = () -> new ArrayList<>();
+        BiConsumer<List<String>, String> accumulator = (list, s) -> list.add(s);
+        BinaryOperator<List<String>> combiner = (list1, list2) -> {
+            ArrayList<String> list = new ArrayList<>();
+            list.addAll(list1);
+            list.addAll(list2);
+            return list;
+        };
+        Function<List<String>, String> finisher = (list) -> {
+            StringJoiner joiner = new StringJoiner(",");
+            list.forEach(s -> joiner.add(s));
+            return joiner.toString();
+        };
 
-        Collector<String, ?, String> toCsv =
-            new CollectorImpl<>(supplier, accumulator, combiner, finisher, Collections.emptySet());
+        Collector<String, List<String>, String> toCsv =
+                new CollectorImpl<>(supplier, accumulator, combiner, finisher, Collections.emptySet());
         String nameAsCsv = customerList.stream().map(Customer::getName).collect(toCsv);
         assertThat(nameAsCsv, is("Joe,Steven,Patrick,Diana,Chris,Kathy,Alice,Andrew,Martin,Amy"));
     }
 
-    @Difficult @Test
+
+    @Easy
+    @Test
+    public void simplestStringJoin3() {
+        List<Customer> customerList = this.mall.getCustomerList();
+
+        /**
+         * Implement a {@link Collector} which can create a String with comma separated names shown in the assertion.
+         * The collector will be used by serial stream.
+         */
+        Supplier<StringJoiner> supplier = () -> new StringJoiner(",");
+        BiConsumer<StringJoiner, String> accumulator = (joiner, s) -> joiner.add(s);
+        BinaryOperator<StringJoiner> combiner = (joiner1, joiner2) -> joiner1.merge(joiner2);
+        Function<StringJoiner, String> finisher = joiner -> joiner.toString();
+
+        Collector<String, StringJoiner, String> toCsv =
+                new CollectorImpl<>(supplier, accumulator, combiner, finisher, Collections.emptySet());
+        String nameAsCsv = customerList.stream().map(Customer::getName).collect(toCsv);
+        assertThat(nameAsCsv, is("Joe,Steven,Patrick,Diana,Chris,Kathy,Alice,Andrew,Martin,Amy"));
+    }
+
+    @Difficult
+    @Test
     public void mapKeyedByItems() {
         List<Customer> customerList = this.mall.getCustomerList();
 
@@ -60,9 +111,9 @@ public class Exercise9Test extends ClassicOnlineStore {
         Function<Object, Map<String, Set<String>>> finisher = null;
 
         Collector<Customer, ?, Map<String, Set<String>>> toItemAsKey =
-            new CollectorImpl<>(supplier, accumulator, combiner, finisher, EnumSet.of(
-                Collector.Characteristics.CONCURRENT,
-                Collector.Characteristics.IDENTITY_FINISH));
+                new CollectorImpl<>(supplier, accumulator, combiner, finisher, EnumSet.of(
+                        Collector.Characteristics.CONCURRENT,
+                        Collector.Characteristics.IDENTITY_FINISH));
         Map<String, Set<String>> itemMap = customerList.stream().parallel().collect(toItemAsKey);
         assertThat(itemMap.get("plane"), containsInAnyOrder("Chris"));
         assertThat(itemMap.get("onion"), containsInAnyOrder("Patrick", "Amy"));
@@ -74,7 +125,8 @@ public class Exercise9Test extends ClassicOnlineStore {
         assertThat(itemMap.get("desk"), containsInAnyOrder("Alice"));
     }
 
-    @Difficult @Test
+    @Difficult
+    @Test
     public void bitList2BitString() {
         String bitList = "22-24,9,42-44,11,4,46,14-17,5,2,38-40,33,50,48";
 
